@@ -1,12 +1,15 @@
 name: Release Build and Publish
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
       - '*'
 
 env:
-  TARGET_REPO: devlikeapro/gows-plus
+  TARGET_REPO: ${{ github.repository }}
   PROTO_SRC_DIR: proto
 
 jobs:
@@ -25,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build
         run: |
@@ -52,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Upload proto artifact
         uses: actions/upload-artifact@v4
@@ -66,6 +69,7 @@ jobs:
     needs: [ build-binaries, collect-proto ]
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ github.ref_name }}
 
     steps:
@@ -74,18 +78,13 @@ jobs:
         with:
           path: artifacts
 
-      - name: Setup GitHub CLI
-        env:
-          CLI_GH_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}
+      - name: Create release
         run: |
-          gh auth login --with-token <<< "$CLI_GH_TOKEN"
-          gh config set prompt disabled
-
-#      - name: Create new release
-#        run: |
-#          gh release create "$RELEASE_TAG" \
-#            --repo "$TARGET_REPO" \
-#            --title "$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" \
+            --repo "$TARGET_REPO" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --generate-notes
 
       - name: Upload release assets
         run: |
