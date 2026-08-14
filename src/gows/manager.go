@@ -9,6 +9,7 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"strings"
 	"sync"
+	"time"
 )
 
 var ErrSessionNotFound = errors.New("session not found")
@@ -17,6 +18,7 @@ var ErrSessionNotFound = errors.New("session not found")
 type SessionManager struct {
 	sessions     map[string]*GoWS
 	sessionsLock *sync.RWMutex
+	lastStopped  map[string]time.Time
 	log          waLog.Logger
 }
 
@@ -106,6 +108,7 @@ func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		sessions:     make(map[string]*GoWS),
 		sessionsLock: &sync.RWMutex{},
+		lastStopped:  make(map[string]time.Time),
 		log:          gowsLog.Stdout("Manager", "DEBUG", false),
 	}
 }
@@ -150,6 +153,17 @@ func (sm *SessionManager) unlockedBuild(name string, cfg SessionConfig) (*GoWS, 
 func (sm *SessionManager) Start(name string) error {
 	sm.log.Infof("Starting session '%s'...", name)
 	sm.sessionsLock.RLock()
+	stoppedAt := sm.lastStopped[name]
+	sm.sessionsLock.RUnlock()
+	if remaining := reconnectQuiesceRemaining(stoppedAt, time.Now()); remaining > 0 {
+		sm.log.Infof("Waiting %v before reconnecting session '%s'...", remaining, name)
+		time.Sleep(remaining)
+	}
+
+	// Resolve the session only after the quiescence window. An operator may stop
+	// the session while we're waiting, in which case starting the stale pointer
+	// would silently reactivate a deliberately stopped channel.
+	sm.sessionsLock.RLock()
 	goWS, ok := sm.sessions[name]
 	sm.sessionsLock.RUnlock()
 	if !ok {
@@ -184,6 +198,9 @@ func (sm *SessionManager) Stop(name string) {
 	sm.sessionsLock.Unlock()
 	if ok {
 		goWS.Stop()
+		sm.sessionsLock.Lock()
+		sm.lastStopped[name] = time.Now()
+		sm.sessionsLock.Unlock()
 	}
 	sm.log.Infof("Session stopped '%s'", name)
 }

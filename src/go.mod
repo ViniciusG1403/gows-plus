@@ -64,4 +64,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.mau.fi/whatsmeow => github.com/ViniciusG1403/whatsmeow v0.0.0-20260811231452-9590cec39b61
+replace go.mau.fi/whatsmeow => github.com/ViniciusG1403/whatsmeow v0.0.0-20260814234036-029b068d5499

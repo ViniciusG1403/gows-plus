@@ -136,7 +136,10 @@ func (s *Server) GetSessionState(ctx context.Context, req *__.Session) (*__.Sess
 	if err != nil {
 		return nil, err
 	}
-	return &__.SessionStateResponse{Found: true, Connected: cli.IsConnected()}, nil
+	// A websocket may remain open after a stream error while authentication and
+	// inbound delivery are already dead. Reporting that state as connected makes
+	// WAHA expose a false WORKING status and prevents external recovery.
+	return &__.SessionStateResponse{Found: true, Connected: cli.IsConnected() && cli.IsLoggedIn()}, nil
 }
 
 func (s *Server) RequestCode(ctx context.Context, req *__.PairCodeRequest) (*__.PairCodeResponse, error) {
