@@ -113,6 +113,10 @@ func remove(path string) {
 func main() {
 	flag.Parse()
 	log := gowsLog.Stdout("Server", "DEBUG", false)
+	if err := configureWhatsAppVersion(log); err != nil {
+		log.Errorf("Invalid WhatsApp Web version: %v", err)
+		os.Exit(1)
+	}
 
 	// Start pprof HTTP server if enabled
 	if pprofFlag {

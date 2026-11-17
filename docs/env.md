@@ -32,6 +32,15 @@ entirely and shows a generic "Other device".
 Device props are only sent when a device registers, so change these, restart the **container**, and
 then **repair** (logout/scan QR) a session for it to take effect.
 
+## WhatsApp Web version
+
+`WAHA_GOWS_WA_VERSION` optionally overrides the three-part WhatsApp Web client
+version before any session starts. The compatibility default is
+`2.3000.1054751086` (upstream whatsmeow version checked on 2026-11-17).
+Invalid overrides stop startup. This changes the connection identity; it does
+not log out, recreate or modify paired devices. Keep the underlying library
+updated as protocol changes can require more than a version change.
+
 ## GOWS Device Props
 
 Low-level device capability flags sent to WhatsApp during session linking.

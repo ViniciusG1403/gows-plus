@@ -1,0 +1,30 @@
+name: Build WhatsApp compatibility hotfix
+
+on:
+  push:
+    branches: ['hotfix/wa-version-20261117']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test and build the existing GOWS fork
+        run: docker build --tag gows-incident .
+      - name: Extract and hash the tested binary
+        run: |
+          docker create --name gows-incident-extract gows-incident
+          mkdir release
+          docker cp gows-incident-extract:/release/gows release/gows-amd64
+          docker rm gows-incident-extract
+          cd release
+          sha256sum gows-amd64 > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gows-compat-amd64
+          path: release/
+          retention-days: 7
